@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>SBD 2026 — Medium QR Code School Voucher Generator</title>
+    <!-- Fonts & Libraries -->
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #eef2f7;
+            font-family: 'Oswald', 'Segoe UI', Arial, sans-serif;
+            padding: 30px 24px;
+            color: #001f3f;
+        }
+
+        /* main container */
+        .app-container {
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        /* header */
+        .hero-header {
+            background: linear-gradient(135deg, #002b5c 0%, #004080 100%);
+            color: white;
+            border-radius: 28px 28px 20px 20px;
+            padding: 24px 30px;
+            margin-bottom: 28px;
+            box-shadow: 0 12px 22px -8px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        .logo-strip {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .logo-badge {
+            background: white;
+            border-radius: 50%;
+            width: 72px;
+            height: 72px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            overflow: hidden;
+            padding: 6px;
+        }
+        .logo-badge img {
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+        }
+        .hero-header h3 {
+            font-size: 1rem;
+            font-weight: 500;
+            letter-spacing: 1px;
+            margin: 8px 0 2px;
+        }
+        .hero-header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 12px 0 4px;
+            letter-spacing: 1px;
+            word-break: keep-all;
+        }
+        .hero-header .sub {
+            font-size: 0.85rem;
+            opacity: 0.9;
+            font-weight: 400;
+        }
+
+        /* main card layout */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 480px;
+            gap: 28px;
+        }
+
+        /* left panel */
+        .form-panel {
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 12px 24px rgba(0,0,0,0.08);
+            overflow: hidden;
+            border: 1px solid rgba(0,64,128,0.2);
+        }
+        .panel-title {
+            background: #004080;
+            padding: 16px 22px;
+            color: white;
+            font-weight: 600;
+            font-size: 1.1rem;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .panel-title span {
+            background: white;
+            color: #004080;
+            width: 32px;
+            height: 32px;
+            border-radius: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1rem;
+        }
+        .form-body {
+            padding: 24px 28px;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px 20px;
+        }
+        .full-width {
+            grid-column: span 2;
+        }
+        .input-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .input-field label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #004080;
+            letter-spacing: 0.6px;
+        }
+        .input-field label .required {
+            color: #dc3545;
+            margin-left: 4px;
+        }
+        .input-field input, .input-field select {
+            font-family: 'Oswald', monospace;
+            padding: 10px 12px;
+            border: 2px solid #cbdbe2;
+            border-radius: 18px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            background: #fefefe;
+            transition: all 0.2s;
+        }
+        .input-field input:focus, .input-field select:focus {
+            border-color: #004080;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0,64,128,0.2);
+        }
+        .input-field input.error, .input-field select.error {
+            border-color: #dc3545;
+            background-color: #fff8f8;
+        }
+        .json-preview-block {
+            background: #f0f5fb;
+            border-radius: 20px;
+            padding: 12px 16px;
+            margin: 20px 0 12px;
+            border-left: 5px solid #004080;
+        }
+        .json-label {
+            font-weight: 700;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #004080;
+            margin-bottom: 8px;
+        }
+        .json-content {
+            font-family: monospace;
+            font-size: 0.7rem;
+            background: #e9eef3;
+            padding: 8px 12px;
+            border-radius: 14px;
+            word-break: break-all;
+            max-height: 70px;
+            overflow: auto;
+            color: #001f3f;
+        }
+        .btn-group {
+            display: flex;
+            gap: 16px;
+            margin-top: 18px;
+            flex-wrap: wrap;
+        }
+        .btn-primary {
+            background: #ffc107;
+            border: none;
+            padding: 12px 20px;
+            font-weight: 700;
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            border-radius: 60px;
+            cursor: pointer;
+            transition: 0.2s;
+            color: #001f3f;
+            flex: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .btn-primary:hover {
+            background: #e0a800;
+            transform: translateY(-1px);
+        }
+        .btn-outline {
+            background: white;
+            border: 2px solid #004080;
+            padding: 12px 20px;
+            font-weight: 700;
+            border-radius: 60px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.8rem;
+            cursor: pointer;
+            color: #004080;
+            flex: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .btn-outline:hover {
+            background: #eef4fc;
+        }
+
+        /* RIGHT PANEL - Medium sized QR CARD */
+        .preview-panel {
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.1);
+            padding: 20px;
+            position: sticky;
+            top: 25px;
+            border: 1px solid rgba(0,64,128,0.3);
+        }
+        .preview-header {
+            text-align: center;
+            font-weight: 700;
+            font-size: 1rem;
+            background: #f8fafd;
+            padding: 8px 12px;
+            border-radius: 60px;
+            margin-bottom: 22px;
+            color: #004080;
+            letter-spacing: 1px;
+        }
+        .voucher-stage {
+            background: #f2f6fc;
+            border-radius: 24px;
+            padding: 22px 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 380px;
+        }
+
+        /* MEDIUM CARD — exact dimensions: 480px width, 240px height (medium, balanced) */
+        .school-card-medium {
+            width: 480px;
+            height: 240px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+            display: grid;
+            grid-template-columns: 1fr 170px;
+            overflow: hidden;
+            font-family: 'Oswald', Arial, sans-serif;
+            border: 1px solid #dce5f0;
+            transition: all 0.1s ease;
+        }
+        .card-main-info {
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border-right: 2px dashed #cbdbe2;
+        }
+        .badge-year {
+            background: #00408010;
+            color: #004080;
+            font-weight: 800;
+            font-size: 0.6rem;
+            letter-spacing: 0.8px;
+            padding: 3px 10px;
+            border-radius: 40px;
+            display: inline-block;
+            width: fit-content;
+            margin-bottom: 9px;
+            border: 1px solid #c4d4e8;
+        }
+        .school-name {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: #002b5c;
+            line-height: 1.25;
+            margin-bottom: 6px;
+        }
+        .community-text {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #1f3a5f;
+            margin-bottom: 3px;
+        }
+        .phu-text {
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: #1e4663;
+            margin-bottom: 3px;
+        }
+        .district-text {
+            font-size: 0.68rem;
+            color: #2c5282;
+            margin-bottom: auto;
+        }
+        .footer-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-top: 10px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 8px;
+        }
+        .enroll-block {
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+        .enroll-block strong {
+            font-size: 1rem;
+            font-weight: 800;
+            display: block;
+            line-height: 1.2;
+            color: #000;
+        }
+        .emis-status {
+            text-align: right;
+        }
+        .emis-code {
+            font-size: 0.6rem;
+            font-weight: 600;
+            background: #eef2f9;
+            padding: 2px 8px;
+            border-radius: 30px;
+            margin-bottom: 5px;
+        }
+        .status-badge {
+            font-size: 0.65rem;
+            font-weight: 800;
+            padding: 3px 9px;
+            border-radius: 20px;
+            display: inline-block;
+            background: #e6f2e6;
+            color: #2b6e2e;
+            border: 1px solid #b8d9b0;
+        }
+        .status-badge.new-school {
+            background: #fff0dc;
+            color: #b45309;
+            border-color: #f5cba0;
+        }
+        /* QR block */
+        .qr-block {
+            background: #fdfdfd;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 12px 8px;
+        }
+        .qr-container-medium {
+            width: 132px;
+            height: 132px;
+            background: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            padding: 5px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+        .qr-container-medium canvas, .qr-container-medium img {
+            width: 124px !important;
+            height: 124px !important;
+            display: block !important;
+        }
+        .qr-container-medium img {
+            display: none !important;
+        }
+        .qr-label {
+            font-size: 0.58rem;
+            font-weight: 700;
+            margin-top: 8px;
+            color: #004080;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+        }
+        .qr-sub {
+            font-size: 0.55rem;
+            color: #4a627a;
+            font-weight: 500;
+        }
+        .info-hint {
+            margin-top: 18px;
+            background: #e9f4f0;
+            border-radius: 20px;
+            padding: 10px 16px;
+            text-align: center;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: #1b4d3e;
+        }
+
+        @media (max-width: 960px) {
+            .dashboard { grid-template-columns: 1fr; }
+            .preview-panel { position: static; margin-top: 20px; }
+            .school-card-medium { width: 100%; height: auto; grid-template-columns: 1fr 140px; }
+            .qr-container-medium canvas { width: 110px !important; height: 110px !important; }
+        }
+        @media (max-width: 550px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .full-width { grid-column: span 1; }
+            .school-card-medium { grid-template-columns: 1fr; }
+            .qr-block { border-top: 1px dashed #ccc; padding: 12px; }
+        }
+        .notification-toast {
+            position: fixed;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1f2937;
+            color: white;
+            padding: 12px 28px;
+            border-radius: 60px;
+            font-weight: 600;
+            z-index: 2000;
+            font-size: 0.85rem;
+            box-shadow: 0 8px 18px black;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <div class="hero-header">
+        <div class="logo-strip">
+            <div class="logo-badge"><img src="ICF-SL.jpg" alt="ICF-SL" onerror="this.style.display='none'; this.parentElement.style.background='#ffcd7e'; this.parentElement.innerHTML='ICF'"></div>
+        </div>
+        <h3>INFORMATICS CONSULTANCY FIRM - SIERRA LEONE (ICF-SL)</h3>
+        <p style="font-size:0.7rem; opacity:0.9">Driving Data-Driven Solutions for Health and Development</p>
+        <h1>🏫 SCHOOL QR COUPON · SBD 2026</h1>
+        <p class="sub">Generate medium‑size QR code vouchers • Scan to auto‑fill distribution form</p>
+    </div>
+
+    <div class="dashboard">
+        <!-- LEFT: form area -->
+        <div class="form-panel">
+            <div class="panel-title">
+                <span>1</span> SCHOOL & LOCATION DETAILS
+            </div>
+            <div class="form-body">
+                <div class="form-grid">
+                    <div class="input-field">
+                        <label>District <span class="required">*</span></label>
+                        <select id="districtSelect" onchange="onDistrictChanged()">
+                            <option value="">— Select District —</option>
+                        </select>
+                    </div>
+                    <div class="input-field">
+                        <label>Chiefdom <span class="required">*</span></label>
+                        <select id="chiefdomSelect" onchange="liveUpdate()" disabled>
+                            <option value="">— Select Chiefdom —</option>
+                        </select>
+                    </div>
+                    <div class="input-field full-width">
+                        <label>PHU (Health Facility) <span class="required">*</span></label>
+                        <input type="text" id="phuField" placeholder="e.g., Gbinti CHC" oninput="liveUpdate()">
+                    </div>
+                    <div class="input-field">
+                        <label>Community <span class="required">*</span></label>
+                        <input type="text" id="communityField" placeholder="e.g., GBINTI" oninput="liveUpdate()">
+                    </div>
+                    <div class="input-field">
+                        <label>Enrollment <span class="required">*</span></label>
+                        <input type="number" id="enrollField" placeholder="e.g., 340" oninput="liveUpdate()">
+                    </div>
+                    <div class="input-field full-width">
+                        <label>School Name <span class="required">*</span></label>
+                        <input type="text" id="schoolField" placeholder="e.g., GBINTI PRIMARY SCHOOL" oninput="liveUpdate()">
+                    </div>
+                    <div class="input-field">
+                        <label>EMIS Number</label>
+                        <input type="text" id="emisField" value="9999-9-99999" placeholder="EMIS" oninput="liveUpdate()">
+                    </div>
+                    <div class="input-field">
+                        <label>Status</label>
+                        <input type="text" id="statusField" value="New" readonly style="background:#f0f4fa;">
+                    </div>
+                </div>
+                <div class="json-preview-block">
+                    <div class="json-label">📋 QR PAYLOAD (JSON) — medium sized QR</div>
+                    <div class="json-content" id="jsonPreviewArea">Fill school data → JSON will appear</div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn-primary" onclick="downloadVoucher('png', 1.0)">📥 Download PNG (Medium)</button>
+                    <button class="btn-outline" onclick="downloadVoucher('jpeg', 0.92)">📸 Download JPEG</button>
+                </div>
+                <div style="margin-top: 12px; font-size: 0.65rem; text-align: center; color:#4a627a;">✔️ QR code size: 124x124px (medium, optimal for scanning)</div>
+            </div>
+        </div>
+
+        <!-- RIGHT: preview with medium card -->
+        <div class="preview-panel">
+            <div class="preview-header">📱 LIVE PREVIEW · MEDIUM QR CARD</div>
+            <div class="voucher-stage">
+                <div class="school-card-medium" id="mediumCard"></div>
+            </div>
+            <div class="info-hint">
+                ⚡ When scanned via SBD app, this QR auto-fills: District, Chiefdom, PHU, Community, School, Enrollment, EMIS, Status.
+            </div>
+        </div>
+    </div>
+    <div style="margin-top: 35px; text-align: center; background: #002b5c; border-radius: 40px; padding: 18px; color: white; font-weight: 500;">
+        <p>Informatics Consultancy Firm-Sierra Leone (ICF-SL) · National Malaria Control Programme · SBD 2026 School Distribution</p>
+        <p style="font-size: 0.7rem; opacity: 0.7;">© 2026 ICF-SL — QR Generator v2.0 (Medium QR)</p>
+    </div>
+</div>
+<div id="toastMsg" class="notification-toast"></div>
+
+<script>
+    // ------------- CASCADING CHIEFDOM CSV -------------
+    let cascadeMaster = [];   // raw rows
+    
+    // Helper DOM
+    const districtSel = document.getElementById('districtSelect');
+    const chiefdomSel = document.getElementById('chiefdomSelect');
+    const phuInp = document.getElementById('phuField');
+    const communityInp = document.getElementById('communityField');
+    const enrollInp = document.getElementById('enrollField');
+    const schoolInp = document.getElementById('schoolField');
+    const emisInp = document.getElementById('emisField');
+    const statusInp = document.getElementById('statusField');
+
+    function getFieldValue(id) { return document.getElementById(id)?.value?.trim() || ''; }
+    
+    // load CSV
+    window.addEventListener('DOMContentLoaded', () => {
+        Papa.parse('chie_cascading.csv', {
+            download: true,
+            header: true,
+            skipEmptyLines: true,
+            complete: (res) => {
+                cascadeMaster = res.data;
+                populateDistrictList();
+                liveUpdate();
+            },
+            error: () => {
+                document.getElementById('toastMsg').innerText = '⚠️ Could not load chie_cascading.csv, but you can still type manually.';
+                toastShow();
+                populateDistrictList(); // empty fallback
+            }
+        });
+    });
+
+    function getNormalized(row) {
+        const keys = Object.keys(row).map(k => k.toLowerCase());
+        let districtVal = '', chiefdomVal = '';
+        for (let k of keys) {
+            if (k.includes('district') || k.includes('dist') || k === 'adm1') districtVal = row[Object.keys(row)[keys.indexOf(k)]] || '';
+            if (k.includes('chiefdom') || k.includes('chief') || k === 'adm2') chiefdomVal = row[Object.keys(row)[keys.indexOf(k)]] || '';
+        }
+        return { district: (districtVal || '').trim(), chiefdom: (chiefdomVal || '').trim() };
+    }
+
+    function populateDistrictList() {
+        let districtsSet = new Set();
+        cascadeMaster.forEach(row => {
+            let d = getNormalized(row).district;
+            if (d) districtsSet.add(d);
+        });
+        let districts = Array.from(districtsSet).sort();
+        districtSel.innerHTML = '<option value="">— Select District —</option>';
+        districts.forEach(d => {
+            let opt = document.createElement('option');
+            opt.value = d;
+            opt.textContent = d;
+            districtSel.appendChild(opt);
+        });
+        if (districts.length === 0) {
+            // fallback allow manual but still allow selection
+            districtSel.innerHTML += '<option value="Western Area Urban">Western Area Urban</option><option value="Bo">Bo</option>';
+        }
+    }
+
+    function onDistrictChanged() {
+        const selectedDistrict = districtSel.value;
+        chiefdomSel.innerHTML = '<option value="">— Select Chiefdom —</option>';
+        if (!selectedDistrict) {
+            chiefdomSel.disabled = true;
+            liveUpdate();
+            return;
+        }
+        let chiefdomsSet = new Set();
+        cascadeMaster.forEach(row => {
+            const { district, chiefdom } = getNormalized(row);
+            if (district && district.toLowerCase() === selectedDistrict.toLowerCase() && chiefdom) {
+                chiefdomsSet.add(chiefdom);
+            }
+        });
+        let chiefdoms = Array.from(chiefdomsSet).sort();
+        chiefdoms.forEach(ch => {
+            let opt = document.createElement('option');
+            opt.value = ch;
+            opt.textContent = ch;
+            chiefdomSel.appendChild(opt);
+        });
+        chiefdomSel.disabled = (chiefdoms.length === 0);
+        if (chiefdoms.length === 0 && !chiefdomSel.disabled) chiefdomSel.disabled = false;
+        liveUpdate();
+    }
+    
+    // update JSON & medium QR card
+    function buildQrPayload() {
+        let payload = {
+            district: getFieldValue('districtSelect'),
+            chiefdom: getFieldValue('chiefdomSelect'),
+            facility: getFieldValue('phuField'),
+            community: getFieldValue('communityField'),
+            school_name: getFieldValue('schoolField'),
+            enrollment: getFieldValue('enrollField'),
+            emis_number: getFieldValue('emisField') || 'N/A',
+            school_status: getFieldValue('statusField') || 'New'
+        };
+        // remove empty fields
+        for (let k in payload) if (!payload[k]) delete payload[k];
+        return JSON.stringify(payload);
+    }
+
+    function showNotification(msg, type = 'info') {
+        let toast = document.getElementById('toastMsg');
+        toast.textContent = msg;
+        toast.style.opacity = '1';
+        toast.style.background = type === 'error' ? '#b91c1c' : '#1f2937';
+        setTimeout(() => { toast.style.opacity = '0'; }, 2800);
+    }
+    function toastShow() { 
+        let t = document.getElementById('toastMsg');
+        setTimeout(() => { t.style.opacity = '0'; }, 2600);
+    }
+
+    // Medium QR rendering exactly inside card
+    function renderMediumCard() {
+        let container = document.getElementById('mediumCard');
+        if (!container) return;
+        const district = getFieldValue('districtSelect');
+        const chiefdom = getFieldValue('chiefdomSelect');
+        const facility = getFieldValue('phuField');
+        const community = getFieldValue('communityField');
+        const school = getFieldValue('schoolField');
+        const enrollment = getFieldValue('enrollField');
+        const emis = getFieldValue('emisField') || '—';
+        let status = getFieldValue('statusField') || 'New';
+        const statusLower = status.toLowerCase();
+        const statusClass = (statusLower === 'new') ? 'new-school' : '';
+        
+        const qrPayload = buildQrPayload();
+        const uniqueQrId = 'qr_medium_' + Date.now() + '_' + Math.floor(Math.random() * 99999);
+        
+        container.innerHTML = `
+            <div class="card-main-info">
+                <div class="badge-year">SBD 2026 · ICF-SL</div>
+                <div class="school-name">${school || 'School Name'}</div>
+                <div class="community-text">${community || '—'} ${chiefdom ? ', ' + chiefdom : ''}</div>
+                <div class="phu-text">🏥 ${facility || 'Health Facility'}</div>
+                <div class="district-text">📍 ${district || 'District'}</div>
+                <div class="footer-meta">
+                    <div class="enroll-block"><strong>${enrollment || '—'}</strong> pupils enrolled</div>
+                    <div class="emis-status">
+                        <div class="emis-code">EMIS: ${emis}</div>
+                        <div class="status-badge ${statusClass}">${status}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="qr-block">
+                <div class="qr-container-medium" id="${uniqueQrId}"></div>
+                <div class="qr-label">SCAN TO FILL FORM</div>
+                <div class="qr-sub">ICF-SL · NMCP</div>
+            </div>
+        `;
+        
+        const qrDiv = document.getElementById(uniqueQrId);
+        if (qrDiv && qrPayload && qrPayload.length > 2) {
+            try {
+                // clear previous children
+                while (qrDiv.firstChild) qrDiv.removeChild(qrDiv.firstChild);
+                new QRCode(qrDiv, {
+                    text: qrPayload,
+                    width: 124,
+                    height: 124,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+                // ensure canvas display & hide any img fallback
+                setTimeout(() => {
+                    let canv = qrDiv.querySelector('canvas');
+                    if (canv) {
+                        canv.style.width = '124px';
+                        canv.style.height = '124px';
+                        canv.style.display = 'block';
+                    }
+                    let imgs = qrDiv.querySelectorAll('img');
+                    imgs.forEach(img => img.style.display = 'none');
+                }, 40);
+            } catch(e) { console.warn(e); }
+        } else {
+            qrDiv.innerHTML = '<div style="font-size:10px; text-align:center;">⚠️ QR data invalid</div>';
+        }
+    }
+    
+    function liveUpdate() {
+        renderMediumCard();
+        document.getElementById('jsonPreviewArea').innerText = buildQrPayload();
+        validateRequiredFields();
+    }
+    
+    function validateRequiredFields() {
+        const fields = [
+            {id: 'districtSelect', name: 'District'}, {id: 'chiefdomSelect', name: 'Chiefdom'},
+            {id: 'phuField', name: 'PHU'}, {id: 'communityField', name: 'Community'},
+            {id: 'enrollField', name: 'Enrollment'}, {id: 'schoolField', name: 'School Name'}
+        ];
+        let allOk = true;
+        fields.forEach(f => {
+            let el = document.getElementById(f.id);
+            if (!el) return;
+            let val = el.value?.trim() || '';
+            if (!val && (f.id !== 'chiefdomSelect' || !districtSel.value)) {
+                el.classList.add('error');
+                allOk = false;
+            } else {
+                el.classList.remove('error');
+            }
+        });
+        // chiefdom not required if district missing?
+        if (!districtSel.value) chiefdomSel.classList.add('error');
+        else chiefdomSel.classList.remove('error');
+        return allOk;
+    }
+    
+    function downloadVoucher(format, quality) {
+        let isValid = validateRequiredFields();
+        if (!isValid) {
+            showNotification('❌ Please fill all required fields (District, Chiefdom, PHU, Community, Enrollment, School Name)', 'error');
+            return;
+        }
+        const cardElement = document.getElementById('mediumCard');
+        if (!cardElement) return;
+        showNotification('⏳ Generating medium QR image ...', 'info');
+        html2canvas(cardElement, {
+            scale: 2.8,
+            backgroundColor: '#ffffff',
+            useCORS: false,
+            logging: false
+        }).then(canvas => {
+            let schoolNameForFile = (getFieldValue('schoolField') || 'school').replace(/[^a-z0-9]/gi, '_').substring(0, 30);
+            let a = document.createElement('a');
+            a.download = `SBD_QR_${schoolNameForFile}.${format}`;
+            a.href = canvas.toDataURL(`image/${format}`, quality);
+            a.click();
+            showNotification(`✅ Downloaded as ${format.toUpperCase()} (Medium QR)`, 'success');
+        }).catch(err => {
+            console.error(err);
+            showNotification('⚠️ Failed to generate image, check console', 'error');
+        });
+    }
+    
+    // attach live updates for all inputs
+    const allInputs = ['districtSelect', 'chiefdomSelect', 'phuField', 'communityField', 'enrollField', 'schoolField', 'emisField'];
+    allInputs.forEach(id => {
+        let el = document.getElementById(id);
+        if (el) el.addEventListener('input', liveUpdate);
+        if (el && el.tagName === 'SELECT') el.addEventListener('change', liveUpdate);
+    });
+    
+    window.onDistrictChanged = onDistrictChanged;
+    window.liveUpdate = liveUpdate;
+    window.downloadVoucher = downloadVoucher;
+    // initial call
+    setTimeout(() => {
+        if (cascadeMaster.length === 0) {
+            // dummy if csv not present but keep working manually
+            populateDistrictList();
+        }
+        liveUpdate();
+    }, 200);
+</script>
+</body>
+</html>
